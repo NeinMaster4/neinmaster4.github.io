@@ -251,6 +251,58 @@
 #groups_navi_wrapper.compact #groups_navi .groups_navi_item.custom.active:before {
 	background: transparent url(/images/planner/layout/navi_icons/active/custom.svg) 50% 50% no-repeat;background-size: 24px 24px;
 }
+
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_init:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_break_walls:before { background-image: url(/images/design/icons/break.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_create_walls:before { background-image: url(/images/design/icons/wall.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_rooms:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_radiators:before { background-image: url(/images/design/icons/radiator_bimetal.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_furniture:before { background-image: url(/images/design/icons/sofa.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_santeh:before { background-image: url(/images/design/icons/sink.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_waterplan:before { background-image: url(/images/design/icons/waterpipe.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_sockets:before { background-image: url(/images/design/icons/socket1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_light:before { background-image: url(/images/design/icons/chandelier.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_light_connections:before { background-image: url(/images/design/icons/light_switch.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_warm_floor:before { background-image: url(/images/design/icons/warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_conditioners:before { background-image: url(/images/design/icons/conditioner.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_ventilation:before { background-image: url(/images/design/icons/vent.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_security:before { background-image: url(/images/design/icons/security_alarm.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_shield:before { background-image: url(/images/design/icons/electric_shield.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_cables:before { background-image: url(/images/design/icons/wire.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_floor:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_walls:before { background-image: url(/images/design/icons/wall_finish_paint.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_ceiling:before { background-image: url(/images/design/icons/ceiling_lights.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_hydroisolation:before { background-image: url(/images/design/icons/water_warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_isolation:before { background-image: url(/images/design/icons/wall_mt1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_shtukaturka:before { background-image: url(/images/design/icons/plaster.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.plan_styazhka:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.custom:before { background-image: url(/images/design/icons/wizard.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.add:before { background-image: url(/images/design/tools/add.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_init:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_break_walls:before { background-image: url(/images/design/icons/break.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_create_walls:before { background-image: url(/images/design/icons/wall.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_rooms:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_radiators:before { background-image: url(/images/design/icons/radiator_bimetal.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_furniture:before { background-image: url(/images/design/icons/sofa.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_santeh:before { background-image: url(/images/design/icons/sink.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_waterplan:before { background-image: url(/images/design/icons/waterpipe.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_sockets:before { background-image: url(/images/design/icons/socket1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_light:before { background-image: url(/images/design/icons/chandelier.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_light_connections:before { background-image: url(/images/design/icons/light_switch.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_warm_floor:before { background-image: url(/images/design/icons/warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_conditioners:before { background-image: url(/images/design/icons/conditioner.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_ventilation:before { background-image: url(/images/design/icons/vent.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_security:before { background-image: url(/images/design/icons/security_alarm.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_shield:before { background-image: url(/images/design/icons/electric_shield.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_cables:before { background-image: url(/images/design/icons/wire.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_floor:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_walls:before { background-image: url(/images/design/icons/wall_finish_paint.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_ceiling:before { background-image: url(/images/design/icons/ceiling_lights.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_hydroisolation:before { background-image: url(/images/design/icons/water_warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_isolation:before { background-image: url(/images/design/icons/wall_mt1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_shtukaturka:before { background-image: url(/images/design/icons/plaster.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_styazhka:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.custom.active:before { background-image: url(/images/design/icons/wizard.png); }
 #groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_init:before {
 	background: transparent url(/images/planner/layout/navi_icons/active/init.svg) 50% 50% no-repeat;background-size: 24px 24px;
 }
@@ -323,6 +375,30 @@
 #groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_styazhka:before {
 	background: transparent url(/images/planner/layout/navi_icons/active/styazhka.svg) 50% 50% no-repeat;background-size: 24px 24px;
 }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_init:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_break_walls:before { background-image: url(/images/design/icons/break.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_create_walls:before { background-image: url(/images/design/icons/wall.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_rooms:before { background-image: url(/images/design/icons/roomzone.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_radiators:before { background-image: url(/images/design/icons/radiator_bimetal.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_furniture:before { background-image: url(/images/design/icons/sofa.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_santeh:before { background-image: url(/images/design/icons/sink.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_waterplan:before { background-image: url(/images/design/icons/waterpipe.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_sockets:before { background-image: url(/images/design/icons/socket1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_light:before { background-image: url(/images/design/icons/chandelier.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_light_connections:before { background-image: url(/images/design/icons/light_switch.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_warm_floor:before { background-image: url(/images/design/icons/warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_conditioners:before { background-image: url(/images/design/icons/conditioner.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_ventilation:before { background-image: url(/images/design/icons/vent.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_security:before { background-image: url(/images/design/icons/security_alarm.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_shield:before { background-image: url(/images/design/icons/electric_shield.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_cables:before { background-image: url(/images/design/icons/wire.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_floor:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_walls:before { background-image: url(/images/design/icons/wall_finish_paint.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_ceiling:before { background-image: url(/images/design/icons/ceiling_lights.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_hydroisolation:before { background-image: url(/images/design/icons/water_warm_floor.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_isolation:before { background-image: url(/images/design/icons/wall_mt1.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_shtukaturka:before { background-image: url(/images/design/icons/plaster.png); }
+#groups_navi_wrapper.compact #groups_navi .groups_navi_item.active.plan_styazhka:before { background-image: url(/images/design/icons/floor_finish_plitka.png); }
 
 
 
