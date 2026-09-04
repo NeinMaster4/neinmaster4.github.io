@@ -1,15 +1,25 @@
 /* Compact workspace header and grouped plan selector. */
+#container.video_clean #planner_container {
+    top: 45px;
+}
+
+#container.video_clean .canvas {
+    top: 46px;
+}
+
+#container.video_clean .fog,
+#container.video_clean #blur_fog,
 #container.video_clean #planner_ui_message_fog {
-    top: 75px;
+    top: 45px;
 }
 
 #container.video_clean #wall-finishes-entry-hint {
-    top: 92px;
+    top: 62px;
 }
 
 #container.video_clean #wall-finishes-editor {
-    top: 100px;
-    max-height: calc(100vh - 170px);
+    top: 70px;
+    max-height: calc(100vh - 140px);
 }
 
 #planner_ui_functions .planner-nav-selector {
