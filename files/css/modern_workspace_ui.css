@@ -888,22 +888,22 @@
 /* Floating zoom and navigation control */
 #footer_bar #planner_ui_zoom {
     box-sizing: border-box;
-    width: 220px;
-    height: 38px;
-    top: -38px;
-    right: 106px;
+    width: 174px;
+    height: 30px;
+    top: -44px;
+    right: 96px;
+    margin-right: 0;
     padding: 0;
     border: 1px solid rgba(24, 28, 34, 0.1);
-    border-bottom: 0;
-    border-radius: 11px 11px 0 0;
+    border-radius: 9px;
     background: var(--workspace-surface);
     box-shadow: 0 8px 24px rgba(25, 29, 36, 0.14);
 }
 
 #footer_bar #planner_ui_zoom_track {
     position: absolute;
-    top: 8px;
-    right: 34px;
+    top: 4px;
+    right: 32px;
     left: 32px;
     width: auto;
     height: 22px;
@@ -919,7 +919,9 @@
 
 #footer_bar #planner_ui_zoom_less,
 #footer_bar #planner_ui_zoom_more {
-    top: 7px;
+    top: 3px;
+    width: 22px;
+    height: 22px;
     margin-top: 0;
     border-radius: 7px;
     opacity: 0.58;
@@ -932,10 +934,10 @@
 
 #footer_bar #planner_ui_navigate {
     left: auto;
-    right: -102px;
+    right: -83px;
     bottom: 0;
-    width: 92px;
-    height: 30px;
+    width: 74px;
+    height: 24px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -943,11 +945,12 @@
 }
 
 #footer_bar #planner_ui_navigate .planner_ui_navigate_button {
-    width: 27px;
-    height: 27px;
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
     margin: 1px;
     border: 1px solid rgba(24, 28, 34, 0.16);
-    border-radius: 7px 7px 0 0;
+    border-radius: 6px;
     background-color: #fff;
     opacity: 0.55;
 }
@@ -958,9 +961,18 @@
 }
 
 #footer_bar #planner_ui_navigate .planner_ui_navigate_button#navigate_top {
-    bottom: 31px;
-    margin-left: -14px;
-    border-radius: 7px;
+    bottom: 26px;
+    margin-left: -11px;
+    border-radius: 6px;
+}
+
+#footer_bar #planner_ui_socials {
+    right: 286px;
+    top: -34px;
+}
+
+#planner_ui_tools_tooltip .tools-preview.failed img {
+    display: none;
 }
 
 /* Common popups, dialogs and teaching overlays */

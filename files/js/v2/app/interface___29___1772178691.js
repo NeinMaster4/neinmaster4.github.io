@@ -2201,7 +2201,8 @@ $(function() {
 
 	tools_item_about_hover_timeout = null;
 	$(document).on('mouseenter', '.tools_item_about', function(e) {
-		this_item = $(this);
+		var this_item = $(this);
+		clearTimeout(tools_item_about_hover_timeout);
 		tools_item_about_hover_timeout = setTimeout(function() {
 		    var content = this_item.attr("data-text");
 		    var image = this_item.attr("data-image");
