@@ -176,7 +176,8 @@
         if (!current) return;
 
         triggerLabel.textContent = itemName(current);
-        trigger.setAttribute("title", itemName(current));
+        trigger.setAttribute("title", "Режимы проекта");
+        trigger.setAttribute("aria-label", "Режимы проекта: " + itemName(current));
         triggerIcon.className = "planner-nav-trigger-icon " + iconClass(current);
         triggerIcon.textContent = iconSymbol(current);
     }
