@@ -1,0 +1,115 @@
+(async function () {
+    const output = parent.document.getElementById('results');
+    const results = [];
+    window.addEventListener('error', function(e) { results.push('ERROR '+(e.error && e.error.stack || e.message)); });
+    const tick = () => new Promise(resolve => setTimeout(resolve, 100));
+    const assert = (value, message) => { if (!value) throw new Error(message); results.push('PASS ' + message); output.textContent = results.join('\n'); };
+    try {
+        for (let i = 0; i < 100 && (!window.app_load || !Object.keys(ROOMS2).length || !document.getElementById('elevation-layer')); i++) await tick();
+        await tick(); await tick();
+        // Do not write synthetic projects into local storage or the server.
+        project.localSave = function () {};
+        const r = Object.values(ROOMS2).find(r => r && r.polygon && r.area > 2);
+        assert(r, 'A real planner room is available');
+        plan = 'projections'; plan_ = 0; setPlansAndPlansGroup();
+        $Project.draw(); r.PRS.get({force:true}); r.PRS.draw();
+        const select = document.getElementById('elevation-layer');
+        select.value = '3'; select.dispatchEvent(new Event('change',{bubbles:true})); await tick();
+        assert(project.prs.mode === 3 && document.body.classList.contains('elevation-water'), 'Selecting water keeps mode 3 active');
+        assert(document.querySelectorAll('#elevation-layer option').length === 3, 'All three layers are available');
+        const edge = r.PRS.lines.find(e => e.length > 130);
+        const origin = Math.min(...edge.polygon.map(p=>p.x)), floor = Math.max(...edge.polygon.map(p=>p.y));
+        function mouseAt(x,y,type='mousedown',button=0,target) {
+            const root = document.getElementById('main_svg'), point=root.createSVGPoint();point.x=x;point.y=y;
+            const screen=point.matrixTransform(root.getScreenCTM());
+            (target || root).dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,clientX:screen.x,clientY:screen.y,button,buttons:type==='mouseup'?0:1}));
+            if (arguments.length === 2) root.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,cancelable:true,clientX:screen.x,clientY:screen.y,button:0,buttons:0}));
+        }
+        const initialCount = Object.keys(ITEMS).length;
+        document.getElementById('plannertool_waterspot_cold').click(); assert(tool==='waterspot_cold','The water toolbar selects its native tool'); mouseAt(origin+40,floor-80); await tick();
+        assert(Object.keys(ITEMS).length === initialCount+1, 'A cold-water outlet can be placed on the elevation');
+        let cold = Object.values(ITEMS).find(i=>i && i.props && i.props.name==='waterspot_cold' && i.props.id_room===r.id);
+        assert(cold && Math.abs(cold.props.over_floor.value-80)<1, 'Outlet height is stored on the original Item');
+        assert(document.querySelector('[data-water-item="'+cold.props.id+'"]'), 'The newly placed outlet has a visible connection port');
+        const initialPipes = Object.keys(PIPES).length;
+        select_tool('water_pipe');
+        mouseAt(origin+50,floor-70); await tick(); mouseAt(origin+110,floor-70); await tick();
+        assert(Object.keys(PIPES).length===initialPipes+1, 'Drawing creates a native Pipe graph');
+        let pipe = Object.values(PIPES).find(p=>p && p.vertexes && p.vertexes.some(v=>v.water_elevation));
+        assert(pipe && pipe.vertexes.filter(v=>v.water_elevation).length===2, 'Both pipe endpoints retain wall and height metadata');
+        mouseAt(origin+110,floor-140); await tick();
+        assert(pipe.vertexes.length===3, 'A vertical pipe can be drawn at the same plan position');
+        assert(document.querySelectorAll('[data-water-tree="'+pipe.id+'"]').length===2, 'Both pipe segments appear in elevation');
+        assert(Math.abs(pipe.getLength()-130)<1, 'Pipe length includes the vertical segment');
+        document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); select_tool('none');
+        let node=document.querySelector('[data-water-node="'+pipe.vertexes[2].id+'"]');
+        mouseAt(origin+110,floor-140,'mousedown',0,node); mouseAt(origin+120,floor-160,'mousemove'); mouseAt(origin+120,floor-160,'mouseup'); await tick();
+        assert(Math.abs(pipe.vertexes[2].water_elevation.height-160)<1, 'Dragging a pipe node changes its saved height');
+        const saved = JSON.parse(JSON.stringify(pipe.serialize()));
+        assert(saved.vertexes[2].water_elevation.height===160 && saved.vertexes[2].point.x !== origin+120, 'Serialization retains plan coordinates and elevation height separately');
+        let line=document.querySelector('[data-water-tree="'+pipe.id+'"]');
+        mouseAt(origin+80,floor-70,'mousedown',2,line); await tick();
+        assert(document.getElementById('cm-tree').style.display!=='none' && window.contextmenu_tree_id===pipe.id, 'Right click opens the native pipe context menu');
+        document.querySelector('#cm-tree [action="split_line"]').click(); await tick();
+        assert(pipe.vertexes.length===4, 'Native split action inserts a pipe node');
+        assert(pipe.vertexes[3].water_elevation && Math.abs(pipe.vertexes[3].water_elevation.height-70)<1, 'Split retains the elevation height');
+        assert($PipingWater.waterspots.water_pipe.gas_boiler && $PipingWater.waterspots.water_hot_pipe.gas_boiler && !$PipingWater.waterspots.drainage_pipe.gas_boiler, 'Boiler supports separate cold/hot connections and rejects sewage');
+        assert($PipingWater.source_items.water_pipe.water.gas_boiler && $PipingWater.source_items.water_hot_pipe.gas_boiler.waterspot_hot, 'Boiler can be a cold-water target and a hot-water source');
+        select.value='1';select.dispatchEvent(new Event('change',{bubbles:true}));await tick();
+        assert(!document.querySelector('.elevation-water-drawing') && !layers.prs_sockets.node.style.pointerEvents, 'Leaving water removes the overlay and restores electrical interaction');
+        select.value='3';select.dispatchEvent(new Event('change',{bubbles:true}));await tick();
+        assert(document.querySelectorAll('[data-water-tree="'+pipe.id+'"]').length===3, 'Returning to water restores the edited pipe');
+        // Fixtures, all pipe types, and boiler connections share the original graph.
+        document.getElementById('plannertool_waterspot_drainage_cold_hot').click();
+        mouseAt(origin+150, floor-90); await tick();
+        const combined = Object.values(ITEMS).find(i=>i && i.props && i.props.name==='waterspot_drainage_cold_hot' && i.props.id_room===r.id);
+        assert(combined && document.querySelectorAll('[data-water-item="'+combined.props.id+'"]').length===3, 'A combined outlet exposes cold, hot and sewage ports');
+        const pp = combined.props.pc;
+        const savedPlan = plan, savedPlanSub = plan_;
+        plan='water';plan_=0;
+        const boiler = new Item({name:'gas_boiler',pc:{x:pp.x+8,y:pp.y+8},angle:combined.props.angle,projection:combined.props.projection,id_room:r.id,plan:{c:1},over_floor:{value:100}});
+        ITEMS[boiler.props.id]=boiler;
+        const socket = new Item({name:'socket_power',pc:{...cold.props.pc},angle:cold.props.angle,projection:cold.props.projection,id_room:r.id,plan:{sockets:1}});
+        ITEMS[socket.props.id]=socket;
+        plan=savedPlan;plan_=savedPlanSub;
+        r.PRS.get({force:true});$Project.updatePrs();await tick();
+        const getPort=(id,type)=>document.querySelector('[data-water-item="'+id+'"][data-water-type="'+type+'"]');
+        const clickPort=(port)=>mouseAt(+port.getAttribute('cx'),+port.getAttribute('cy'),'mousedown',0,port);
+        assert(getPort(boiler.props.id,'water_pipe') && getPort(boiler.props.id,'water_hot_pipe'), 'The boiler has visible separate inlet and outlet markers');
+        for (const type of ['water_pipe','water_hot_pipe','drainage_pipe']) {
+            document.getElementById('plannertool_'+type).click();
+            clickPort(getPort(combined.props.id,type));await tick();
+            mouseAt(origin+185,floor-100);await tick();
+            document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+            assert(Object.values(PIPES).some(p=>p && p.type===type && p.items[combined.props.id]), 'The '+type+' pipe connects to its matching outlet');
+        }
+        document.getElementById('plannertool_water_pipe').click();clickPort(getPort(cold.props.id,'water_pipe'));await tick();clickPort(getPort(boiler.props.id,'water_pipe'));await tick();
+        assert(Object.values(PIPES).some(p=>p && p.type==='water_pipe' && p.items[cold.props.id] && p.items[boiler.props.id]), 'Cold water connects to the boiler inlet');
+        document.getElementById('plannertool_water_hot_pipe').click();clickPort(getPort(boiler.props.id,'water_hot_pipe'));await tick();clickPort(getPort(combined.props.id,'water_hot_pipe'));await tick();
+        assert(Object.values(PIPES).some(p=>p && p.type==='water_hot_pipe' && p.items[boiler.props.id] && p.items[combined.props.id]), 'Hot water connects from the boiler outlet');
+        select_tool('none');
+        assert(socket.IMAGE_PRS && layers.prs_sockets.node.style.pointerEvents==='none', 'Electrical symbols are visible but cannot receive pointer events in water mode');
+        const strokes = Array.from(socket.IMAGE_PRS.node.querySelectorAll('[stroke]')).map(e=>e.getAttribute('stroke'));
+        assert(strokes.includes('#a5a5a5') && !strokes.includes('crimson'), 'Electrical symbols use inactive grey styling');
+        const socketBefore=JSON.stringify(socket.props.pc), socketHeight=socket.props.over_floor.value;
+        mouseAt(origin+40,floor-socketHeight,'mousedown',0,socket.IMAGE_PRS.node);
+        mouseAt(origin+60,floor-110,'mousemove');mouseAt(origin+60,floor-110,'mouseup');await tick();
+        assert(JSON.stringify(socket.props.pc)===socketBefore && socket.props.over_floor.value===socketHeight, 'Dragging an electrical symbol does not change its plan position or height');
+        assert(tools.gas_boiler.path_front && r.PRS.lines.some(e=>e.items.some(i=>i.pid===boiler.props.id)), 'Boiler has a visible elevation body');
+        // Persist/restore through the native storage implementation, including native validation.
+        const exported = PIPES.copy();
+        PIPES.restore(JSON.parse(JSON.stringify(exported)));$Project.updatePrs();await tick();
+        assert(Object.values(PIPES).some(p=>p && p.vertexes && p.vertexes.some(v=>v.water_elevation && v.water_elevation.height===160)), 'Native Pipe storage round trip preserves elevation edits');
+        const close=document.getElementById('prs_close').getBoundingClientRect(), layersBox=document.getElementById('projections_modes_tab').getBoundingClientRect();
+        assert(close.bottom<=layersBox.top && close.right<=innerWidth && layersBox.right<=innerWidth, 'Close button and layer selector stack inside the viewport');
+        $Project.prsClose();await tick();
+        assert(!document.body.classList.contains('elevation-water') && !document.querySelector('.elevation-water-drawing'), 'Closing the elevation removes the water editor');
+        r.PRS.draw();await tick();
+        assert(select.value==='3' && document.querySelector('.elevation-water-drawing'), 'Reopening the elevation remembers its selected layer');
+        change_group('waterplan');await tick();await tick();
+        assert(plan==='water' && document.getElementById('plannertool_water_pipe').classList.contains('show'), 'Switching to the ordinary water plan preserves its toolbar');
+        plan='projections';r.PRS.get({force:true});r.PRS.draw();await tick();
+        assert(!results.some(line=>line.startsWith('ERROR ')), 'No uncaught application errors during the regression suite');
+        output.className='pass'; output.textContent=results.join('\n')+'\nALL TESTS PASSED';
+    } catch (error) { output.className='fail'; output.textContent=results.join('\n')+'\nFAIL '+error.stack; }
+}());
