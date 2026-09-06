@@ -756,6 +756,8 @@ function set_scroller(element, height) {
 		railColor: '#000',
 		opacity: 1,
 		railOpacity: 0.3,
+		wheelStep: 14,
+		touchScrollStep: 24,
 		disableFadeOut: true,
 		alwaysVisible: false
 	});
@@ -2199,14 +2201,25 @@ $(function() {
 
 	tools_item_about_hover_timeout = null;
 	$(document).on('mouseenter', '.tools_item_about', function(e) {
-		this_item = $(this);
+		var this_item = $(this);
+		clearTimeout(tools_item_about_hover_timeout);
 		tools_item_about_hover_timeout = setTimeout(function() {
 		    var content = this_item.attr("data-text");
 		    var image = this_item.attr("data-image");
 		    if (content) {
 				$("#planner_ui_tools_tooltip_content").text(content);
+			} else if (image) {
+				var preview = $("<div class='tools-preview'><img alt='' /><span class='preloader'></span><span class='tools_preview_error'>Превью недоступно</span></div>");
+				var preview_image = preview.find("img");
+				preview_image.one("load", function() {
+					preview.addClass("ready");
+				}).one("error", function() {
+					preview.addClass("failed");
+				});
+				$("#planner_ui_tools_tooltip_content").empty().append(preview);
+				preview_image.attr("src", image);
 			} else {
-				$("#planner_ui_tools_tooltip_content").html("<img src='"+image+"' /><span class='preloader'></span>");
+				$("#planner_ui_tools_tooltip_content").text("Описание пока не добавлено");
 			}
 		    var pageX = this_item.offset().left + 6 + this_item.width();
 			var pageY = this_item.offset().top - $("#planner_container").offset().top - 9;
