@@ -39,7 +39,8 @@
 }
 
 #planner_ui_tools .tools_item,
-#planner_ui_tools .tools_item.show {
+#planner_ui_tools .tools_item.show,
+#planner_ui_tools .tools_more_item.show_on_waterplan {
     box-sizing: border-box;
     min-width: 218px;
     min-height: 38px;
@@ -54,13 +55,15 @@
 }
 
 #planner_ui_tools_wrapper.compact .tools_item,
-#planner_ui_tools_wrapper.compact .tools_item.show {
+#planner_ui_tools_wrapper.compact .tools_item.show,
+#planner_ui_tools_wrapper.compact .tools_more_item.show_on_waterplan {
     min-height: 34px;
     padding-top: 9px;
     padding-bottom: 9px;
 }
 
-#planner_ui_tools .tools_item:before {
+#planner_ui_tools .tools_item:before,
+#planner_ui_tools .tools_more_item.show_on_waterplan:before {
     top: 3px;
     bottom: 3px;
     left: 4px;
@@ -74,13 +77,15 @@
     transition: background-color 0.16s ease, opacity 0.16s ease, transform 0.16s ease;
 }
 
-#planner_ui_tools .tools_item:hover {
+#planner_ui_tools .tools_item:hover,
+#planner_ui_tools .tools_more_item.show_on_waterplan:hover {
     border: 0;
     background: #f4f5f6;
     color: #111317;
 }
 
-#planner_ui_tools .tools_item:hover:before {
+#planner_ui_tools .tools_item:hover:before,
+#planner_ui_tools .tools_more_item.show_on_waterplan:hover:before {
     background-color: transparent;
     opacity: 1;
     transform: scale(1.04);

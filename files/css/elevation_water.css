@@ -24,7 +24,6 @@ body.elevation-water #planner_ui_tools_wrapper .tools_more_item.show_on_waterpla
 #planner_ui_tools_wrapper { top: 31px; }
 .planner-tools-heading { position: fixed; top: 49px; left: 8px; padding: 3px 7px; border: 0; border-radius: 4px; background: rgba(255,255,255,.94); color: #626972; }
 #planner_ui_tools_wrapper.hidden .planner-tools-heading { visibility: hidden; }
-body.elevation-water #planner_ui_tools .tools_item.show_on_waterplan { color: white; font-size: 13px; line-height: 1; }
 
 #planner_ui_tools .tools_item.wall_profile:before, #planner_ui_tools .tools_item.wall_molding:before, #planner_ui_tools .tools_item.wall_niche:before { background-position: center; background-repeat: no-repeat; background-size: 22px 22px; }
 body.elevation-water #planner_ui_tools_scroller { max-height: calc(100vh - 160px) !important; overflow-y: auto !important; }
