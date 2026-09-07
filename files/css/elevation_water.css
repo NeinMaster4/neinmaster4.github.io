@@ -9,10 +9,8 @@
 #planner_ui_tools .tools_item.wall_profile:before { background-image: url('/images/design/icons/elevation_profile.svg'); }
 #planner_ui_tools .tools_item.wall_molding:before { background-image: url('/images/design/icons/elevation_molding.svg'); }
 #planner_ui_tools .tools_item.wall_niche:before { background-image: url('/images/design/icons/elevation_niche.svg'); }
-body.elevation-water #planner_ui_tools .tools_item { display: none !important; }
-body.elevation-water #planner_ui_tools .tools_item.show_on_waterplan { display: block !important; }
-body.elevation-water #planner_ui_tools_wrapper .tools_more_item { display: none !important; }
-body.elevation-water #planner_ui_tools_wrapper .tools_more_item.show_on_waterplan { display: block !important; }
+body.elevation-water #planner_ui_tools .tools_item:not(.show_on_waterplan),
+body.elevation-water #planner_ui_tools_wrapper .tools_more_item:not(.show_on_waterplan) { display: none !important; }
 .elevation-water-drawing .water-hit { cursor: pointer; }
 .elevation-water-drawing .water-node { cursor: move; }
 @media (max-width: 680px) {
@@ -44,10 +42,9 @@ body.elevation-water #planner_ui_tools_scroller { max-height: calc(100vh - 160px
 #planner_ui_tools #plannertool_waterspot_drainage_hot:before { background-image: url(/images/design/icons/water_waterspot_drainage_hot.svg); background-size: 22px 22px; }
 #planner_ui_tools .tools_more_item.show_on_waterplan.wizard:before { background-image: url(/images/design/icons/water_wizard.svg); background-size: 22px 22px; }
 
-.water-pipe-measurements { position: fixed; z-index: 10000; pointer-events: none; max-width: calc(100vw - 32px); padding: 7px 10px; border: 1px solid #dfe2e6; border-radius: 7px; background: rgba(255,255,255,.97); color: #25282d; font: 12px/1.5 Arial, sans-serif; box-shadow: 0 3px 12px #0002; }
-.water-pipe-measurements[hidden], .water-pipe-move-action[hidden] { display: none; }
-.water-pipe-move-action { display: block; margin: 8px 0 0; padding: 8px 10px; border: 1px solid #dfe2e6; border-radius: 6px; background: #f4f5f6; color: #25282d; font: inherit; cursor: pointer; }
-.water-pipe-move-action:hover { background: #fff4e5; }
+.water-pipe-move-action[hidden] { display: none !important; }
+.water-pipe-move-action { font: inherit; cursor: pointer; }
+.water-pipe-move-action span { white-space: nowrap; }
 .water-pipe-move-action:disabled { opacity: .5; cursor: default; }
 /* expandOpen animates transform and overrides the tooltip's translateX(50%). */
 #footer_bar_tools .footer_bar_tool .footer_bar_comment.expandOpen { animation: none; -webkit-animation: none; transition: none; }

@@ -6,8 +6,8 @@
     var COLORS = { water_pipe: "#106fc6", water_hot_pipe: "#dc143c", drainage_pipe: "#3baa00" };
     var NAMES = { water_pipe: "ХВС", water_hot_pipe: "ГВС", drainage_pipe: "Канализация" };
     var layer, selector, drawing, preview, source, drag, waterPress = false, queued = false, rendering = false;
-    var ports = [], segmentViews = [], menuPoint, lastWaterState = false, savedToolClasses = [];
-    var suppressPipeRelease = false, shiftHeld = false, pipeMove = null, measureBox = null, lastPointer = null;
+    var ports = [], segmentViews = [], menuPoint, lastWaterState = false, savedToolClasses = [], savedMoreClasses = [];
+    var suppressPipeRelease = false, shiftHeld = false, pipeMove = null, measurementLines = null, lastPointer = null;
     var NS = "http://www.w3.org/2000/svg";
 
     function snapPoint(origin, point, rect) {
@@ -30,41 +30,33 @@
         }
         return point;
     }
-    function hideMeasurements() { if (measureBox) measureBox.hidden = true; }
-    function measurements(point, event, converted, height) {
-        if (!event) return;
-        var parts = [], unit = function (value) { return LIB.lengthInUserUnits(Math.max(0, value)); };
+    function hideMeasurements() {
+        if (measurementLines) { measurementLines.remove(); measurementLines = null; }
+    }
+    function measurements(point, event, converted) {
+        var outline, position = point;
         if (converted) {
-            var b = bounds(converted.edge), along = converted.screen.x - b.x;
-            height = converted.meta.height;
-            parts.push("Стена слева: " + unit(along), "Стена справа: " + unit(converted.edge.length - along));
+            position = converted.screen;
+            outline = {edges: LIB.polygonEdges(converted.edge.polygon)};
         } else {
-            var r = Object.keys(ROOMS2).map(function (id) { return ROOMS2[id]; }).find(function (r) { return r.polygon && LIB.isPointOverPolygon(point, r.polygon); });
-            if (r) {
-                var nearestWall = Infinity;
-                r.polygon.forEach(function (a, i) {
-                    var b = r.polygon[(i + 1) % r.polygon.length], dx = b.x-a.x, dy = b.y-a.y;
-                    var t = clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/(dx*dx+dy*dy || 1), 0, 1);
-                    nearestWall = Math.min(nearestWall, distance(point, {x:a.x+t*dx, y:a.y+t*dy}));
-                });
-                parts.push("Ближайшая стена: " + unit(nearestWall));
-            }
+            outline = Object.keys(ROOMS2).map(function (id) { return ROOMS2[id]; }).find(function (r) {
+                return r.polygon && LIB.isPointOverPolygon(point, r.polygon);
+            });
         }
-        height = height || 0;
-        parts.push("Пол: " + unit(height), "Потолок: " + unit(params.total_height - height));
-        if (!measureBox) {
-            measureBox = document.createElement("div"); measureBox.className = "water-pipe-measurements";
-            document.body.appendChild(measureBox);
-        }
-        measureBox.textContent = parts.join(" · "); measureBox.hidden = false;
-        measureBox.style.left = Math.max(8, Math.min(event.clientX + 18, window.innerWidth - measureBox.offsetWidth - 8)) + "px";
-        measureBox.style.top = Math.max(8, Math.min(event.clientY + 22, window.innerHeight - measureBox.offsetHeight - 8)) + "px";
+        if (!outline) { hideMeasurements(); return; }
+        // Reuse the editor's dimension lines, ticks and unit formatting.
+        if (!measurementLines) measurementLines = new PositionDimensionLines();
+        measurementLines.update(position, outline, {tool: "water_pipe"});
+        ["t", "b", "l", "r"].forEach(function (side) {
+            var line = measurementLines[side];
+            if (line) line.GROUP.attr({"data-water-dimension": side, "pointer-events": "none"});
+        });
     }
     function finishPipeMove(cancel) {
         if (!pipeMove) return;
         if (cancel) pipeMove.nodes.forEach(function (entry) {
-            entry.node.pc = Object.assign({}, entry.point); entry.node.props.pc = entry.node.pc;
-            entry.vertex.point = Object.assign({}, entry.point);
+            entry.node.setPoint(Object.assign({}, entry.point), false);
+            entry.vertex.point = Object.assign({}, entry.node.pc);
             if (entry.meta) entry.vertex.water_elevation = Object.assign({}, entry.meta); else delete entry.vertex.water_elevation;
         });
         var tree = pipeMove.tree, changed = pipeMove.changed;
@@ -86,7 +78,7 @@
         pipeMove.nodes.forEach(function (entry) {
             if (pipeMove.elevation) moveNode(entry.view, {x:entry.view.x+dx, y:entry.view.y+dy});
             else {
-                entry.node.pc = {x:entry.point.x+dx, y:entry.point.y+dy}; entry.node.props.pc = entry.node.pc;
+                entry.node.setPoint({x:entry.point.x+dx, y:entry.point.y+dy}, false);
                 entry.vertex.point = Object.assign({}, entry.node.pc);
                 // A plan move invalidates the old wall association; retain its height.
                 if (entry.vertex.water_elevation) delete entry.vertex.water_elevation.edge_index;
@@ -100,8 +92,9 @@
     }
     function installPipeActions() {
         var menu = document.querySelector('#cm-tree [action="split_line"]').parentNode;
-        var button = document.createElement("button"); button.type = "button"; button.className = "water-pipe-move-action";
-        button.textContent = "Переместить участок"; button.hidden = true; menu.appendChild(button);
+        var button = document.createElement("button"); button.type = "button"; button.className = "contextmenu_item_icon move water-pipe-move-action";
+        button.setAttribute("aria-label", "Переместить участок");
+        var caption = document.createElement("span"); caption.textContent = "Переместить участок"; button.appendChild(caption); button.hidden = true; menu.appendChild(button);
         var selectedPipe, selectedLine, selectedPoint;
         var context = Pipe.prototype.contextmenu;
         Pipe.prototype.contextmenu = function (event) {
@@ -114,10 +107,10 @@
             return result;
         };
         // Other graph types share this menu and must not inherit the water action.
-        document.addEventListener("mousedown", function (e) { if (e.target !== button) button.hidden = true; }, true);
+        document.addEventListener("mousedown", function (e) { if (!button.contains(e.target)) button.hidden = true; }, true);
         button.addEventListener("mousedown", function (e) { e.stopPropagation(); });
         document.addEventListener("click", function (e) {
-            if (e.target !== button || button.disabled) return;
+            if (!button.contains(e.target) || button.disabled) return;
             stop(e);
             var data = selectedPipe.getDataByTreeLineId(selectedLine); if (!data) return;
             resetSource(); toolOff();
@@ -348,9 +341,9 @@
         var converted = fromScreen(screen, view.edge); if (!converted) return;
         var oldFoot = onEdge(view.node.pc, view.edge).foot, newFoot = onEdge(converted.point, view.edge).foot;
         converted.point = { x: newFoot.x + view.node.pc.x-oldFoot.x, y: newFoot.y + view.node.pc.y-oldFoot.y };
-        view.node.pc = Object.assign({}, converted.point); view.node.props.pc = view.node.pc;
+        view.node.setPoint(Object.assign({}, converted.point), false);
         var v = view.tree.vertexes.find(function (v) { return v.id === view.id; });
-        v.point = Object.assign({}, converted.point); v.water_elevation = converted.meta;
+        v.point = Object.assign({}, view.node.pc); v.water_elevation = converted.meta;
         asWater(function () { view.tree.draw(); });
     }
     function refresh() { if (room()) { room().PRS.get({ force: true }); $Project.updatePrs(); } }
@@ -450,10 +443,13 @@
         if (isWater !== lastWaterState) {
             if (isWater) {
                 savedToolClasses = Array.prototype.slice.call(document.querySelectorAll("#planner_ui_tools .tools_item.show"));
+                savedMoreClasses = Array.prototype.slice.call(document.querySelectorAll("#planner_ui_tools .tools_more_item.active"));
+                document.querySelectorAll("#planner_ui_tools .tools_more_item").forEach(function (item) { item.classList.toggle("active", item.classList.contains("show_on_waterplan")); });
                 document.querySelectorAll("#planner_ui_tools .tools_item").forEach(function (item) { item.classList.toggle("show", item.classList.contains("show_on_waterplan")); });
             } else if (window.plan === "projections") {
                 document.querySelectorAll("#planner_ui_tools .tools_item.show_on_waterplan").forEach(function (item) { item.classList.remove("show"); });
                 savedToolClasses.forEach(function (item) { item.classList.add("show"); });
+                document.querySelectorAll("#planner_ui_tools .tools_more_item").forEach(function (item) { item.classList.toggle("active", savedMoreClasses.indexOf(item) !== -1); });
             }
             lastWaterState = isWater;
             if (window.check_tools_placement) check_tools_placement();

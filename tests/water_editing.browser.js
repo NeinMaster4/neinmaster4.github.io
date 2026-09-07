@@ -35,7 +35,7 @@
         }
         select_tool('water_pipe'); mouseAt(origin+30,floor-100); await tick();
         pointer(origin+90,floor-145,'mousemove',true);
-        assert(document.querySelector('.water-pipe-measurements').textContent.includes('Потолок:'), 'Elevation preview shows surface distances');
+        assert(document.querySelectorAll('[data-water-dimension]').length===4 && !document.querySelector('.water-pipe-measurements'), 'Elevation uses four native dimension lines rather than a floating text box');
         pointer(origin+90,floor-145,'mousedown',true); pointer(origin+90,floor-145,'mouseup',true); await tick();
         const pipe=Object.values(PIPES).find(p=>p && p.vertexes && p.vertexes.some(v=>v.water_elevation));
         assert(pipe && pipe.vertexes.length===2, 'Shift construction creates a pipe');
@@ -47,8 +47,10 @@
         mouseAt(origin+50,floor-120,'mousedown',2,hit);await tick();
         const action=document.querySelector('.water-pipe-move-action');
         assert(!action.hidden && !action.disabled,'Pipe context menu exposes move action');
+        assert(action.classList.contains('move') && getComputedStyle(action,'::before').content !== 'none','Move action uses the native icon');
         action.click();pointer(origin+60,floor-130,'mousemove');await tick();
         assert(Math.abs(a.water_elevation.height-110)<.2,'Move action changes elevation height');
+        assert(Math.abs(pipe.getItem(a.id).circle.cx()-pipe.getItem(a.id).pc.x)<.01 && Math.abs(pipe.getItem(a.id).circle.cy()-pipe.getItem(a.id).pc.y)<.01,'Moving elevation pipes also updates their native node graphics');
         document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();
         assert(JSON.stringify(pipe.serialize())===snapshot,'Escape restores the entire section');
         hit=document.querySelector('[data-water-tree="'+pipe.id+'"]');
@@ -65,6 +67,7 @@
         const actualEnd=pointer(start.x+8,start.y+12,'mousemove');pointer(start.x+8,start.y+12,'mousedown');pointer(start.x+8,start.y+12,'mouseup');await tick();
         assert(Math.abs(a.point.x-start.x-(actualEnd.x-actualStart.x))<.01 && Math.abs(a.point.y-start.y-(actualEnd.y-actualStart.y))<.01,'Move action works on the project water plan');
         assert(a.water_elevation.height===savedHeight,'Plan movement preserves pipe height');
+        assert(Math.abs(pipe.getItem(a.id).circle.cx()-a.point.x)<.01 && Math.abs(pipe.getItem(a.id).circle.cy()-a.point.y)<.01,'Plan node graphics follow the moved pipe');
         select_tool('water_pipe');
         $PipingWater.source_item=pipe.getItem(a.id);$PipingWater.source_id=a.id;$PipingWater.source_point=a.point;$PipingWater.source_name='node';
         document.dispatchEvent(new KeyboardEvent('keydown',{key:'Shift',bubbles:true}));
