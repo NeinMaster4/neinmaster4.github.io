@@ -28,3 +28,26 @@ body.elevation-water #planner_ui_tools_wrapper .tools_more_item.show_on_waterpla
 #planner_ui_tools .tools_item.wall_profile:before, #planner_ui_tools .tools_item.wall_molding:before, #planner_ui_tools .tools_item.wall_niche:before { background-position: center; background-repeat: no-repeat; background-size: 22px 22px; }
 body.elevation-water #planner_ui_tools_scroller { max-height: calc(100vh - 160px) !important; overflow-y: auto !important; }
 #planner_ui_tools .tools_item.waterspot_node:before { background: transparent url('/images/design/icons/elevation_pipe_node.svg') center / 22px 22px no-repeat; }
+
+/* Vector toolbar symbols remain sharp on Retina displays and at any UI scale. */
+#planner_ui_tools #plannertool_water_pipe:before { background-image: url(/images/design/icons/water_water_pipe.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_water_hot_pipe:before { background-image: url(/images/design/icons/water_water_hot_pipe.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_drainage_pipe:before { background-image: url(/images/design/icons/water_drainage_pipe.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_node:before { background-image: url(/images/design/icons/water_waterspot_node.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_collector:before { background-image: url(/images/design/icons/water_waterspot_collector.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_cold:before { background-image: url(/images/design/icons/water_waterspot_cold.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_hot:before { background-image: url(/images/design/icons/water_waterspot_hot.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_drainage:before { background-image: url(/images/design/icons/water_waterspot_drainage.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_cold_hot:before { background-image: url(/images/design/icons/water_waterspot_cold_hot.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_drainage_cold:before { background-image: url(/images/design/icons/water_waterspot_drainage_cold.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_drainage_cold_hot:before { background-image: url(/images/design/icons/water_waterspot_drainage_cold_hot.svg); background-size: 22px 22px; }
+#planner_ui_tools #plannertool_waterspot_drainage_hot:before { background-image: url(/images/design/icons/water_waterspot_drainage_hot.svg); background-size: 22px 22px; }
+#planner_ui_tools .tools_more_item.show_on_waterplan.wizard:before { background-image: url(/images/design/icons/water_wizard.svg); background-size: 22px 22px; }
+
+.water-pipe-measurements { position: fixed; z-index: 10000; pointer-events: none; max-width: calc(100vw - 32px); padding: 7px 10px; border: 1px solid #dfe2e6; border-radius: 7px; background: rgba(255,255,255,.97); color: #25282d; font: 12px/1.5 Arial, sans-serif; box-shadow: 0 3px 12px #0002; }
+.water-pipe-measurements[hidden], .water-pipe-move-action[hidden] { display: none; }
+.water-pipe-move-action { display: block; margin: 8px 0 0; padding: 8px 10px; border: 1px solid #dfe2e6; border-radius: 6px; background: #f4f5f6; color: #25282d; font: inherit; cursor: pointer; }
+.water-pipe-move-action:hover { background: #fff4e5; }
+.water-pipe-move-action:disabled { opacity: .5; cursor: default; }
+/* expandOpen animates transform and overrides the tooltip's translateX(50%). */
+#footer_bar_tools .footer_bar_tool .footer_bar_comment.expandOpen { animation: none; -webkit-animation: none; transition: none; }

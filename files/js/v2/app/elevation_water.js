@@ -7,7 +7,132 @@
     var NAMES = { water_pipe: "ХВС", water_hot_pipe: "ГВС", drainage_pipe: "Канализация" };
     var layer, selector, drawing, preview, source, drag, waterPress = false, queued = false, rendering = false;
     var ports = [], segmentViews = [], menuPoint, lastWaterState = false, savedToolClasses = [];
+    var suppressPipeRelease = false, shiftHeld = false, pipeMove = null, measureBox = null, lastPointer = null;
     var NS = "http://www.w3.org/2000/svg";
+
+    function snapPoint(origin, point, rect) {
+        var dx = point.x - origin.x, dy = point.y - origin.y;
+        var angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4;
+        var ux = Math.cos(angle), uy = Math.sin(angle), length = Math.max(0, dx * ux + dy * uy);
+        if (rect) {
+            if (ux > 1e-8) length = Math.min(length, (rect.right - origin.x) / ux);
+            if (ux < -1e-8) length = Math.min(length, (rect.left - origin.x) / ux);
+            if (uy > 1e-8) length = Math.min(length, (rect.bottom - origin.y) / uy);
+            if (uy < -1e-8) length = Math.min(length, (rect.top - origin.y) / uy);
+        }
+        return { x: origin.x + ux * Math.max(0, length), y: origin.y + uy * Math.max(0, length) };
+    }
+    function constructionPoint(event) {
+        var point = eventPoint(event);
+        if (source && event.shiftKey) {
+            var b = bounds(source.edge);
+            point = snapPoint(source, point, { left: b.x, right: b.x + source.edge.length, top: b.floor - params.total_height, bottom: b.floor });
+        }
+        return point;
+    }
+    function hideMeasurements() { if (measureBox) measureBox.hidden = true; }
+    function measurements(point, event, converted, height) {
+        if (!event) return;
+        var parts = [], unit = function (value) { return LIB.lengthInUserUnits(Math.max(0, value)); };
+        if (converted) {
+            var b = bounds(converted.edge), along = converted.screen.x - b.x;
+            height = converted.meta.height;
+            parts.push("Стена слева: " + unit(along), "Стена справа: " + unit(converted.edge.length - along));
+        } else {
+            var r = Object.keys(ROOMS2).map(function (id) { return ROOMS2[id]; }).find(function (r) { return r.polygon && LIB.isPointOverPolygon(point, r.polygon); });
+            if (r) {
+                var nearestWall = Infinity;
+                r.polygon.forEach(function (a, i) {
+                    var b = r.polygon[(i + 1) % r.polygon.length], dx = b.x-a.x, dy = b.y-a.y;
+                    var t = clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/(dx*dx+dy*dy || 1), 0, 1);
+                    nearestWall = Math.min(nearestWall, distance(point, {x:a.x+t*dx, y:a.y+t*dy}));
+                });
+                parts.push("Ближайшая стена: " + unit(nearestWall));
+            }
+        }
+        height = height || 0;
+        parts.push("Пол: " + unit(height), "Потолок: " + unit(params.total_height - height));
+        if (!measureBox) {
+            measureBox = document.createElement("div"); measureBox.className = "water-pipe-measurements";
+            document.body.appendChild(measureBox);
+        }
+        measureBox.textContent = parts.join(" · "); measureBox.hidden = false;
+        measureBox.style.left = Math.max(8, Math.min(event.clientX + 18, window.innerWidth - measureBox.offsetWidth - 8)) + "px";
+        measureBox.style.top = Math.max(8, Math.min(event.clientY + 22, window.innerHeight - measureBox.offsetHeight - 8)) + "px";
+    }
+    function finishPipeMove(cancel) {
+        if (!pipeMove) return;
+        if (cancel) pipeMove.nodes.forEach(function (entry) {
+            entry.node.pc = Object.assign({}, entry.point); entry.node.props.pc = entry.node.pc;
+            entry.vertex.point = Object.assign({}, entry.point);
+            if (entry.meta) entry.vertex.water_elevation = Object.assign({}, entry.meta); else delete entry.vertex.water_elevation;
+        });
+        var tree = pipeMove.tree, changed = pipeMove.changed;
+        pipeMove = null; asWater(function () { tree.draw(); });
+        document.body.style.cursor = "default"; hideMeasurements();
+        if (active()) refresh();
+        if (changed && !cancel) save(); else schedule();
+    }
+    function movePipe(event) {
+        var p = eventPoint(event), dx = p.x-pipeMove.start.x, dy = p.y-pipeMove.start.y;
+        if (pipeMove.elevation) {
+            // Clamp the translation as a whole, preserving the shape of the section.
+            pipeMove.nodes.forEach(function (entry) {
+                var b = bounds(entry.view.edge);
+                dx = clamp(dx, b.x-entry.view.x, b.x+entry.view.edge.length-entry.view.x);
+                dy = clamp(dy, b.floor-params.total_height-entry.view.y, b.floor-entry.view.y);
+            });
+        }
+        pipeMove.nodes.forEach(function (entry) {
+            if (pipeMove.elevation) moveNode(entry.view, {x:entry.view.x+dx, y:entry.view.y+dy});
+            else {
+                entry.node.pc = {x:entry.point.x+dx, y:entry.point.y+dy}; entry.node.props.pc = entry.node.pc;
+                entry.vertex.point = Object.assign({}, entry.node.pc);
+                // A plan move invalidates the old wall association; retain its height.
+                if (entry.vertex.water_elevation) delete entry.vertex.water_elevation.edge_index;
+            }
+        });
+        pipeMove.changed = Math.abs(dx) + Math.abs(dy) > 0.001;
+        asWater(function () { pipeMove.tree.draw(); });
+        var first = pipeMove.nodes[0], converted = pipeMove.elevation ? fromScreen({x:first.view.x+dx,y:first.view.y+dy},first.view.edge) : null;
+        measurements(first.node.pc, event, converted, first.meta && first.meta.height);
+        schedule();
+    }
+    function installPipeActions() {
+        var menu = document.querySelector('#cm-tree [action="split_line"]').parentNode;
+        var button = document.createElement("button"); button.type = "button"; button.className = "water-pipe-move-action";
+        button.textContent = "Переместить участок"; button.hidden = true; menu.appendChild(button);
+        var selectedPipe, selectedLine, selectedPoint;
+        var context = Pipe.prototype.contextmenu;
+        Pipe.prototype.contextmenu = function (event) {
+            var result = context.apply(this, arguments);
+            selectedPipe = this; selectedLine = window.contextmenu_tree_line_id; selectedPoint = eventPoint(event);
+            var data = this.getDataByTreeLineId(selectedLine);
+            button.hidden = !(active() || window.plan === "water");
+            button.disabled = !data || ![this.vertexes[data.vertex_i], this.vertexes[data.vertex_j]].some(function (v) { return v && v.type === "node"; });
+            button.title = button.disabled ? "Участок закреплен на приборах. Сначала добавьте свободные узлы." : "Выберите новое положение; Esc — отмена";
+            return result;
+        };
+        // Other graph types share this menu and must not inherit the water action.
+        document.addEventListener("mousedown", function (e) { if (e.target !== button) button.hidden = true; }, true);
+        button.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+        document.addEventListener("click", function (e) {
+            if (e.target !== button || button.disabled) return;
+            stop(e);
+            var data = selectedPipe.getDataByTreeLineId(selectedLine); if (!data) return;
+            resetSource(); toolOff();
+            var nodes = [selectedPipe.vertexes[data.vertex_i], selectedPipe.vertexes[data.vertex_j]].filter(function (v) { return v.type === "node"; }).map(function (v) {
+                var node = selectedPipe.getItem(v.id);
+                return {node:node, vertex:v, point:Object.assign({},node.pc), meta:v.water_elevation && Object.assign({},v.water_elevation), view:active() ? vertexView(selectedPipe,v) : null};
+            });
+            if (!nodes.length || (active() && nodes.some(function (n) { return !n.view; }))) return;
+            pipeMove = {tree:selectedPipe, nodes:nodes, start:selectedPoint, elevation:active(), changed:false};
+            $(".contextmenu").hide(); document.body.style.cursor = "move";
+        }, true);
+        document.addEventListener("mousedown", function (e) {
+            if (pipeMove && e.target.closest && e.target.closest("#main_svg")) { stop(e); suppressPipeRelease = true; finishPipeMove(e.button === 2); }
+        }, true);
+    }
 
     function active() { return window.plan_ === "projections" && window.project && project.prs.mode === 3 && !!project.prs.room; }
     function room() { return window.ROOMS2 && project.prs.room && ROOMS2[project.prs.room]; }
@@ -76,7 +201,7 @@
         if (!queued) { queued = true; requestAnimationFrame(function () { queued = false; sync(); if (active()) render(); }); }
     }
     function save() { project.localSave(); schedule(); }
-    function setMeta(tree, id, meta) { var v = tree.vertexes.find(function (v) { return v.id === id; }); if (v) v.water_elevation = Object.assign({}, meta); }
+    function setMeta(tree, id, meta) { var v = tree.vertexes.find(function (v) { return v.id === id; }); if (v) { v.water_elevation = Object.assign({}, meta); tree.updateLength(); } }
     function itemHeight(item, type) {
         var props = item.props, floor = props.over_floor || {};
         return (props.f0offset || 0) + (type === "drainage_pipe" && floor.value_2 !== undefined ? floor.value_2 : floor.value || 0);
@@ -229,11 +354,11 @@
         asWater(function () { view.tree.draw(); });
     }
     function refresh() { if (room()) { room().PRS.get({ force: true }); $Project.updatePrs(); } }
-    function resetSource() { source = null; if (window.$PipingWater) $PipingWater.unselect_source_item(); if (preview) preview.setAttribute("visibility", "hidden"); }
+    function resetSource() { hideMeasurements(); source = null; if (window.$PipingWater) $PipingWater.unselect_source_item(); if (preview) preview.setAttribute("visibility", "hidden"); }
     function canvasDown(event) {
         if (!active() || !event.target.closest || !event.target.closest("#main_svg") || event.target.closest(".elevation-water-drawing")) return;
         if (event.button === 1 || event.altKey || event.ctrlKey || event.metaKey) return;
-        var converted = fromScreen(eventPoint(event)); if (!converted) return;
+        var converted = fromScreen(constructionPoint(event), source && event.shiftKey ? source.edge : null); if (!converted) return;
         stop(event);
         if (event.button === 2) { resetSource(); return; }
         if (TYPES.indexOf(tool) !== -1) {
@@ -281,7 +406,13 @@
         save();
     }
     function move(event) {
-        if (!active()) return;
+        lastPointer = event;
+        shiftHeld = !!event.shiftKey;
+        if (pipeMove) { stop(event); movePipe(event); return; }
+        if (!active()) {
+            if (window.plan === "water" && TYPES.indexOf(tool) !== -1 && !$PipingWater.source_id && event.target.closest && event.target.closest("#main_svg")) measurements(eventPoint(event), event, null, 0);
+            return;
+        }
         if (drag) {
             var p = eventPoint(event); stop(event);
             if (distance(p, drag.start) < 1 && !drag.moved) return;
@@ -298,14 +429,19 @@
                     item.draw(null, { force_draw: true });
                 });
             }
+            var measured = fromScreen(p, drag.view ? drag.view.edge : drag.port ? drag.port.edge : null);
+            if (measured) measurements(measured.point, event, measured);
             schedule();
         } else if (source && preview) {
             if (!event.target.closest || !event.target.closest("#main_svg")) return;
-            stop(event); var target = eventPoint(event);
+            stop(event); var target = constructionPoint(event);
+            measurements(target, event, fromScreen(target, event.shiftKey ? source.edge : null));
             preview.setAttribute("x1", source.x); preview.setAttribute("y1", source.y); preview.setAttribute("x2", target.x); preview.setAttribute("y2", target.y); preview.setAttribute("visibility", "visible");
         } else if (event.target.closest && event.target.closest("#main_svg") && (TYPES.indexOf(tool) !== -1 || tool.indexOf("waterspot_") === 0)) {
             // Do not let the plan editor treat elevation coordinates as floor coordinates.
             stop(event);
+            var measured = fromScreen(eventPoint(event));
+            if (measured) measurements(measured.point, event, measured); else hideMeasurements();
         }
     }
     function sync() {
@@ -365,14 +501,72 @@
         selector = document.createElement("select"); selector.id = "elevation-layer";
         [[2,"Отделка и декор"],[1,"Мебель и инженерия"],[3,"Водоснабжение"]].forEach(function (entry) { var option = document.createElement("option"); option.value = entry[0]; option.textContent = entry[1]; selector.appendChild(option); });
         layer.appendChild(label); layer.appendChild(selector);
-        selector.addEventListener("change", function () { var mode = Number(selector.value); resetSource(); toolOff(); $Project.setModePrs(mode); schedule(); });
+        selector.addEventListener("change", function () { var mode = Number(selector.value); finishPipeMove(true); resetSource(); toolOff(); $Project.setModePrs(mode); schedule(); });
         ["mousedown", "mouseup", "click", "keydown", "keyup"].forEach(function (name) { selector.addEventListener(name, function (e) { e.stopPropagation(); }); });
         var heading = document.createElement("h3"); heading.className = "planner-tools-heading"; heading.textContent = "Инструменты"; heading.title = "Инструменты";
         var toolbar = document.getElementById("planner_ui_tools"); toolbar.insertBefore(heading, toolbar.firstChild);
         var close = document.getElementById("prs_close"); close.setAttribute("role", "button"); close.tabIndex = 0;
         close.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); close.click(); } });
-        close.addEventListener("click", function () { resetSource(); schedule(); });
+        close.addEventListener("click", function () { finishPipeMove(true); resetSource(); schedule(); });
         patchBoiler();
+        installPipeActions();
+        var waterMove = $PipingWater.mousemove;
+        $PipingWater.mousemove = function () {
+            var raw = Object.assign({}, mouse.end), result = waterMove.apply(this, arguments);
+            if (window.plan === "water" && !active() && TYPES.indexOf(tool) !== -1 && this.source_id) {
+                if (shiftHeld) {
+                    var snapped = snapPoint(this.source_point, raw);
+                    if (distance(snapped, mouse.end) > .01) {
+                        this.target_item = this.target_id = this.target_connect = this.target_tree_line = null;
+                        mouse.end = snapped; this.target_point = snapped;
+                        this.temporary_line.draw(this.source_point, snapped, this.color_line, this.get_stroke(tool), tool);
+                    }
+                }
+                var node = this.source_item, tree = node && this.get_tree(node, true);
+                var vertex = tree && tree.vertexes.find(function (v) { return v.id === node.id; });
+                var height = vertex && vertex.water_elevation ? vertex.water_elevation.height : node && node.props && node.props.name !== "node" ? itemHeight(node, tool) : 0;
+                measurements(mouse.end, lastPointer, null, height);
+            }
+            return result;
+        };
+        var waterDown = $PipingWater.mousedown;
+        $PipingWater.mousedown = function () {
+            if (active() || document.body.classList.contains("elevation-water") || window.plan !== "water" || !this.source_id) return waterDown.apply(this, arguments);
+            var oldIds = new Set(), sourceNode = this.source_item;
+            values(trees()).forEach(function (tree) { tree.vertexes.forEach(function (v) { oldIds.add(v.id); }); });
+            var sourceTree = sourceNode && this.get_tree(sourceNode, true);
+            var sourceVertex = sourceTree && sourceTree.vertexes.find(function (v) { return v.id === sourceNode.id; });
+            var height = sourceVertex && sourceVertex.water_elevation ? sourceVertex.water_elevation.height : sourceNode && sourceNode.props.name !== "node" ? itemHeight(sourceNode, tool) : 0;
+            var result = waterDown.apply(this, arguments), changed = false;
+            values(trees()).forEach(function (tree) { tree.vertexes.forEach(function (v) {
+                if (v.type !== "node" || oldIds.has(v.id) || v.water_elevation) return;
+                var containingRoom = Object.keys(ROOMS2).find(function (id) { return ROOMS2[id].polygon && LIB.isPointOverPolygon(v.point, ROOMS2[id].polygon); });
+                if (containingRoom) { setMeta(tree, v.id, {room:containingRoom, height:height}); changed = true; }
+            }); });
+            if (changed) project.localSave();
+            return result;
+        };
+        function refreshAnglePreview(held) {
+            shiftHeld = held;
+            if (!lastPointer) return;
+            if (active()) move({clientX:lastPointer.clientX,clientY:lastPointer.clientY,target:lastPointer.target,shiftKey:held,preventDefault:function(){},stopImmediatePropagation:function(){}});
+            else if (window.plan === "water" && TYPES.indexOf(tool) !== -1 && $PipingWater.source_id) {
+                mouse.end = eventPoint(lastPointer); $PipingWater.mousemove();
+            }
+        }
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Shift") refreshAnglePreview(true);
+            if (e.key === "Escape") { finishPipeMove(true); hideMeasurements(); }
+        }, true);
+        document.addEventListener("keyup", function (e) {
+            if (e.key !== "Shift") return;
+            refreshAnglePreview(false);
+        }, true);
+        window.addEventListener("blur", function () { shiftHeld = false; finishPipeMove(true); hideMeasurements(); });
+        document.addEventListener("mousemove", function (e) {
+            shiftHeld = e.shiftKey;
+            if (!e.target.closest || !e.target.closest("#main_svg") || (!active() && (window.plan !== "water" || TYPES.indexOf(tool) === -1) && !pipeMove)) hideMeasurements();
+        });
         var draw = Projections.prototype.drawOne;
         Projections.prototype.drawOne = function () { var result = draw.apply(this, arguments); sync(); if (active()) render(); return result; };
         var getLength = Pipe.prototype.getLength;
@@ -418,6 +612,8 @@
         project.localSave = function () { var result = localSave.apply(this, arguments); schedule(); return result; };
         var select = window.select_tool;
         window.select_tool = function () {
+            hideMeasurements();
+            if (pipeMove) finishPipeMove(true);
             if (active()) resetSource();
             var result = select.apply(this, arguments);
             if (active()) document.body.style.cursor = TYPES.indexOf(tool) !== -1 || tool.indexOf("waterspot_") === 0 ? "crosshair" : "default";
@@ -436,6 +632,7 @@
         document.addEventListener("mousedown", canvasDown, true);
         document.addEventListener("mousemove", move, true);
         document.addEventListener("mouseup", function (e) {
+            if (suppressPipeRelease) { suppressPipeRelease = false; stop(e); }
             if (waterPress) { waterPress = false; stop(e); }
             if (drag) { stop(e); var changed = drag.moved; drag = null; if (changed) { refresh(); save(); } }
         }, true);
