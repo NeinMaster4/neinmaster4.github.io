@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Planner search regression tests</title>
+<style>body{font:14px system-ui;margin:16px}iframe{width:1280px;height:720px;border:1px solid #ddd}pre{white-space:pre-wrap}.pass{color:#176526}.fail{color:#b31e1e}</style>
+<h1>Planner search regression tests</h1><pre id="results">Loading planner…</pre>
+<iframe id="planner" src="/index.html"></iframe>
+<script>
+// Run against a local HTTP server. The harness does not save test changes.
+const frame = document.getElementById('planner');
+if (new URLSearchParams(location.search).has('narrow')) frame.style.width='480px';
+frame.addEventListener('load', () => {
+ const script = frame.contentDocument.createElement('script');
+ script.src = '/tests/planner_search.browser.js'; frame.contentDocument.body.appendChild(script);
+});
+</script>

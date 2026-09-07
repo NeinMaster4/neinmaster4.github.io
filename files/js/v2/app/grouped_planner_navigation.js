@@ -263,6 +263,137 @@
         observer.observe(navigation, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
     }
 
+    function createSearch() {
+        var field = document.createElement("input"), results = document.createElement("div");
+        var search = document.createElement("div"), status = document.createElement("div");
+        search.className = "planner-project-search";
+        field.type = "search"; field.id = "planner-project-search";
+        field.placeholder = "Найти режим или инструмент…"; field.setAttribute("aria-label", "Поиск режимов и инструментов");
+        field.setAttribute("role", "combobox"); field.setAttribute("aria-autocomplete", "list");
+        field.setAttribute("aria-controls", "planner-project-search-results"); field.setAttribute("aria-expanded", "false");
+        results.id = "planner-project-search-results"; results.setAttribute("role", "listbox"); results.hidden = true;
+        status.className = "planner-search-status"; status.setAttribute("role", "status");
+        search.appendChild(field); search.appendChild(status); search.appendChild(results);
+        wrapper.insertBefore(search, navigation);
+        var matches = [], index = -1, guide, guideTarget, guideTimer, revealVersion = 0;
+        function normalized(text) { return text.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/\s+/g, " ").trim(); }
+        function available(node) { return !node.hidden && node.style.display !== "none" && !node.classList.contains("forbidden"); }
+        function catalog() {
+            var entries = [], plans = {};
+            navigation.querySelectorAll(".groups_navi_item[data-plan]").forEach(function (node) {
+                if (!available(node) || node.classList.contains("add")) return;
+                plans[itemPlan(node)] = node;
+                entries.push({name:itemName(node), path:"Режим проекта", node:node, mode:node});
+            });
+            document.querySelectorAll("#planner_ui_tools .tools_item, #planner_ui_tools .tools_more_item, .planner_ui_subtools .subtools_item:not(.group)").forEach(function (node) {
+                if (!available(node)) return;
+                var root = node, panel = node.closest(".planner_ui_subtools");
+                if (panel) root = Array.prototype.find.call(document.querySelectorAll("#planner_ui_tools .tools_item[data-target]"), function (candidate) {
+                    return candidate.getAttribute("data-target") === panel.getAttribute("data-parent");
+                });
+                if (!root) return;
+                Array.prototype.forEach.call(root.classList, function (name) {
+                    if (name.indexOf("show_on_") !== 0) return;
+                    var mode = plans[name.slice(8)]; if (!mode) return;
+                    entries.push({name:itemName(node), path:itemName(mode)+(panel ? " › "+itemName(root) : ""), node:node, mode:mode, panel:panel});
+                });
+            });
+            return entries;
+        }
+        function clearGuide() {
+            if (guideTarget) guideTarget.classList.remove("planner-search-found");
+            if (guide) guide.remove(); guide = guideTarget = null;
+            clearTimeout(guideTimer);
+        }
+        function positionGuide() {
+            if (!guide || !guideTarget) return;
+            var rect = guideTarget.getBoundingClientRect();
+            if (!rect.width || !rect.height) { clearGuide(); return; }
+            var right = rect.right + 14 + guide.offsetWidth < window.innerWidth;
+            guide.classList.toggle("points-right", !right);
+            guide.style.left = Math.max(8, right ? rect.right + 14 : rect.left - guide.offsetWidth - 14) + "px";
+            guide.style.top = Math.max(8, Math.min(window.innerHeight-guide.offsetHeight-8, rect.top+rect.height/2-guide.offsetHeight/2)) + "px";
+        }
+        function pointTo(node, name) {
+            clearGuide(); guideTarget = node; node.classList.add("planner-search-found");
+            node.scrollIntoView({block:"nearest", inline:"nearest"});
+            guide = document.createElement("div"); guide.className = "planner-search-guide";
+            guide.textContent = name; guide.setAttribute("role", "status"); document.body.appendChild(guide);
+            positionGuide(); guideTimer = setTimeout(clearGuide, 10000);
+        }
+        function reveal(entry) {
+            var version = ++revealVersion;
+            clearGuide(); setOpen(false); field.value = ""; update();
+            if (typeof window.close_subtools_wrapper === "function") close_subtools_wrapper();
+            // Use the same mode transition as a manual choice. Finding a tool does not activate construction.
+            entry.mode.click();
+            var attempt = 0;
+            function locate() {
+                if (version !== revealVersion) return;
+                if (!entry.panel) {
+                    var toolsWrapper = document.getElementById("planner_ui_tools_wrapper"), toolsPanel = document.getElementById("planner_ui_tools");
+                    if (toolsWrapper && toolsPanel) toolsWrapper.style.width = toolsPanel.offsetWidth + "px";
+                }
+                if (entry.panel && typeof window.open_subtools_wrapper === "function") {
+                    open_subtools_wrapper(entry.panel.getAttribute("data-parent"));
+                    var group = entry.node.closest(".subtools_group"); if (group) group.classList.add("active");
+                }
+                if (entry.node === entry.mode) { pointTo(trigger, entry.name); return; }
+                if (entry.node.getClientRects().length && entry.node.getBoundingClientRect().width) {
+                    pointTo(entry.node, entry.name); return;
+                }
+                if (++attempt < 20) setTimeout(locate, 100);
+                else { setOpen(true); field.value = entry.name; update(); status.textContent = "Инструмент недоступен в текущем состоянии проекта."; }
+            }
+            setTimeout(locate, 100);
+        }
+        function selectIndex(next) {
+            index = next;
+            Array.prototype.forEach.call(results.children, function (button, i) { button.setAttribute("aria-selected", String(i === index)); });
+            if (index >= 0 && results.children[index]) {
+                field.setAttribute("aria-activedescendant", results.children[index].id);
+                results.children[index].scrollIntoView({block:"nearest"});
+            } else field.removeAttribute("aria-activedescendant");
+        }
+        function update() {
+            var query = normalized(field.value), words = query.split(" ");
+            results.replaceChildren(); index = -1;
+            if (!query) {
+                matches = []; results.hidden = true; navigation.hidden = false; status.textContent = "";
+                field.setAttribute("aria-expanded", "false"); field.removeAttribute("aria-activedescendant"); return;
+            }
+            matches = catalog().filter(function (entry) {
+                return words.every(function (word) { return normalized(entry.name+" "+entry.path).indexOf(word) !== -1; });
+            }).sort(function (a,b) {
+                function rank(entry) { var name = normalized(entry.name); return name === query ? 0 : name.indexOf(query) === 0 ? 1 : 2; }
+                return rank(a)-rank(b) || a.name.localeCompare(b.name,"ru");
+            });
+            status.textContent = matches.length ? "Найдено: "+matches.length+". Выберите результат, чтобы показать его в редакторе." : "Ничего не найдено";
+            matches = matches.slice(0, 80);
+            matches.forEach(function (entry, i) {
+                var button = document.createElement("button"), name = document.createElement("strong"), path = document.createElement("small");
+                button.type = "button"; button.id = "planner-search-result-"+i; button.setAttribute("role", "option"); button.tabIndex = -1;
+                name.textContent = entry.name; path.textContent = entry.path; button.appendChild(name); button.appendChild(path);
+                button.addEventListener("click", function (event) { event.stopPropagation(); reveal(entry); }); results.appendChild(button);
+            });
+            results.hidden = false; navigation.hidden = true; field.setAttribute("aria-expanded", "true"); selectIndex(matches.length ? 0 : -1);
+        }
+        field.addEventListener("input", update);
+        ["mousedown", "click", "keyup"].forEach(function (name) { field.addEventListener(name, function (e) { e.stopPropagation(); }); });
+        field.addEventListener("keydown", function (event) {
+            event.stopPropagation();
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault(); if (matches.length) selectIndex((index+(event.key === "ArrowDown" ? 1 : matches.length-1)) % matches.length);
+            } else if (event.key === "Enter") { event.preventDefault(); if (matches[index]) reveal(matches[index]); }
+            else if (event.key === "Escape") { event.preventDefault(); if (field.value) { field.value = ""; update(); } else { setOpen(false); trigger.focus(); } }
+        });
+        document.addEventListener("keydown", function (event) { if (event.key === "Escape") { ++revealVersion; clearGuide(); } });
+        document.addEventListener("pointerdown", function (event) { if (guide && !guide.contains(event.target)) { ++revealVersion; clearGuide(); } }, true);
+        window.addEventListener("resize", positionGuide);
+        document.addEventListener("scroll", positionGuide, true);
+        trigger.addEventListener("click", function () { if (wrapper.classList.contains("open")) field.focus(); });
+    }
+
     function init() {
         wrapper = document.getElementById("groups_navi_wrapper");
         navigation = document.getElementById("groups_navi");
@@ -284,6 +415,7 @@
         updateEmptyGroups();
 
         bindEvents();
+        createSearch();
         syncCurrent();
 
         if (typeof window.init_navi_bar === "function") window.init_navi_bar();

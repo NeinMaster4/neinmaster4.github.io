@@ -293,3 +293,20 @@
         max-height: 54vh;
     }
 }
+
+/* Search shares the project-mode catalog and reveals the existing tool in place. */
+.planner-project-search { margin-bottom: 12px; }
+#planner-project-search { display: block; box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #dfe2e6; border-radius: 8px; color: #22252a; background: #fff; font: 14px/1.4 Arial, sans-serif; }
+#planner-project-search:focus { outline: 2px solid #f0a338; outline-offset: 1px; }
+.planner-search-status { padding: 8px 2px 0; color: #747b84; font: 12px/1.4 Arial, sans-serif; }
+.planner-search-status:empty { display: none; }
+#planner-project-search-results { max-height: min(420px, 60vh); overflow: auto; margin-top: 8px; }
+#planner-project-search-results button { display: block; width: 100%; border: 0; border-radius: 6px; padding: 9px 12px; text-align: left; color: #22252a; background: transparent; cursor: pointer; font: 13px/1.4 Arial, sans-serif; }
+#planner-project-search-results button:hover, #planner-project-search-results button[aria-selected="true"] { background: #fff4e5; }
+#planner-project-search-results strong, #planner-project-search-results small { display: block; }
+#planner-project-search-results small { color: #747b84; font-size: 11px; }
+#groups_navi_wrapper.planner-nav-dropdown #groups_navi[hidden], #planner-project-search-results[hidden] { display: none !important; }
+.planner-search-found { outline: 2px solid #ed940e !important; outline-offset: -2px; }
+.planner-search-guide { position: fixed; z-index: 100110; max-width: min(280px, 60vw); box-sizing: border-box; padding: 9px 12px; border-radius: 7px; background: #fff4e5; border: 1px solid #ed940e; color: #22252a; box-shadow: 0 4px 16px #0002; pointer-events: none; font: 13px/1.4 Arial, sans-serif; }
+.planner-search-guide:before { content: ""; position: absolute; left: -10px; top: calc(50% - 7px); border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ed940e; }
+.planner-search-guide.points-right:before { left: auto; right: -10px; border-right: 0; border-left: 10px solid #ed940e; }
