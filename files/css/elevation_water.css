@@ -48,3 +48,5 @@ body.elevation-water #planner_ui_tools_scroller { max-height: calc(100vh - 160px
 .water-pipe-move-action:disabled { opacity: .5; cursor: default; }
 /* expandOpen animates transform and overrides the tooltip's translateX(50%). */
 #footer_bar_tools .footer_bar_tool .footer_bar_comment.expandOpen { animation: none; -webkit-animation: none; transition: none; }
+
+.water-boiler-body { cursor: move; }

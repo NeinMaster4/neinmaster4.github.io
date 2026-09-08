@@ -298,8 +298,23 @@
                     entries.push({name:itemName(node), path:itemName(mode)+(panel ? " › "+itemName(root) : ""), node:node, mode:mode, panel:panel});
                 });
             });
-            return entries;
+            var seen = new Set();
+            return entries.filter(function (entry) {
+                var key = entry.node === entry.mode ? "mode:"+itemPlan(entry.mode) : "tool:"+(entry.node.id || normalized(entry.name));
+                if (seen.has(key)) return false;
+                seen.add(key); return true;
+            });
         }
+        var toolsWrapper = document.getElementById("planner_ui_tools_wrapper");
+        var closeSubtools = window.close_subtools_wrapper;
+        window.close_subtools_wrapper = function () {
+            toolsWrapper.classList.remove("planner-search-single-panel");
+            toolsWrapper.querySelectorAll(".planner-search-back").forEach(function (button) { button.remove(); });
+            var result = closeSubtools.apply(this, arguments);
+            toolsWrapper.style.width = document.getElementById("planner_ui_tools").offsetWidth + "px";
+            return result;
+        };
+        navigation.addEventListener("click", function (event) { if (event.target.closest(".groups_navi_item")) close_subtools_wrapper(); });
         function clearGuide() {
             if (guideTarget) guideTarget.classList.remove("planner-search-found");
             if (guide) guide.remove(); guide = guideTarget = null;
@@ -331,11 +346,19 @@
             function locate() {
                 if (version !== revealVersion) return;
                 if (!entry.panel) {
-                    var toolsWrapper = document.getElementById("planner_ui_tools_wrapper"), toolsPanel = document.getElementById("planner_ui_tools");
+                    var toolsPanel = document.getElementById("planner_ui_tools");
                     if (toolsWrapper && toolsPanel) toolsWrapper.style.width = toolsPanel.offsetWidth + "px";
                 }
                 if (entry.panel && typeof window.open_subtools_wrapper === "function") {
                     open_subtools_wrapper(entry.panel.getAttribute("data-parent"));
+                    toolsWrapper.classList.add("planner-search-single-panel");
+                    if (!entry.panel.querySelector(".planner-search-back")) {
+                        var back = document.createElement("button"); back.type = "button"; back.className = "planner-search-back";
+                        back.textContent = "← Все инструменты";
+                        back.addEventListener("click", function (event) { event.stopPropagation(); clearGuide(); close_subtools_wrapper(); });
+                        entry.panel.insertBefore(back, entry.panel.firstChild);
+                    }
+                    toolsWrapper.style.width = entry.panel.offsetWidth + "px";
                     var group = entry.node.closest(".subtools_group"); if (group) group.classList.add("active");
                 }
                 if (entry.node === entry.mode) { pointTo(trigger, entry.name); return; }

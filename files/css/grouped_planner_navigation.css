@@ -310,3 +310,7 @@
 .planner-search-guide { position: fixed; z-index: 100110; max-width: min(280px, 60vw); box-sizing: border-box; padding: 9px 12px; border-radius: 7px; background: #fff4e5; border: 1px solid #ed940e; color: #22252a; box-shadow: 0 4px 16px #0002; pointer-events: none; font: 13px/1.4 Arial, sans-serif; }
 .planner-search-guide:before { content: ""; position: absolute; left: -10px; top: calc(50% - 7px); border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ed940e; }
 .planner-search-guide.points-right:before { left: auto; right: -10px; border-right: 0; border-left: 10px solid #ed940e; }
+
+#planner_ui_tools_wrapper.planner-search-single-panel #planner_ui_tools { display: none; }
+#planner_ui_tools_wrapper.planner-search-single-panel .planner_ui_subtools.active { left: 0 !important; position: relative; }
+.planner-search-back { display: block; width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid #dfe2e6; background: #fff; color: #626972; text-align: left; cursor: pointer; font: 12px/1.4 Arial, sans-serif; }

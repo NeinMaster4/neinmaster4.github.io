@@ -36,6 +36,9 @@
         for(let i=0;i<30&&!document.getElementById('plannertool_window').classList.contains('planner-search-found');i++)await tick();
         assert(document.getElementById('plannertool_window').closest('.planner_ui_subtools').classList.contains('active'),'Search opens the nested tool menu');
         assert(document.getElementById('plannertool_window').classList.contains('planner-search-found'),'Search points to the nested result');
+        assert(getComputedStyle(document.getElementById('planner_ui_tools')).display==='none' && document.querySelectorAll('.planner_ui_subtools.active').length===1,'Nested search reveals only one tool panel');
+        search('Газовый котел');assert(results.children.length===1,'Duplicate boiler catalog entries produce one search result');
+        field.value='';field.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.planner-nav-trigger').click();
         search('абракадабра12345');assert(!results.children.length && document.querySelector('.planner-search-status').textContent==='Ничего не найдено','Unknown queries show an empty result state');
         field.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(!field.value && !document.getElementById('groups_navi').hidden,'Escape restores the mode list');
         field.value='Водоснабжение';field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await tick();await tick();

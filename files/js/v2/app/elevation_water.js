@@ -231,6 +231,24 @@
             var item = ITEMS[id];
             if (!item || !item.props || item.props.demount || !item.props.pc || !$PipingWater.all_items[item.props.name]) return;
             if (item.props.id_room !== room().id && !LIB.isPointOverPolygon(item.props.pc, room().polygon)) return;
+            if (item.props.name === "gas_boiler") {
+                var center = at(item.props.pc, itemHeight(item, "water_pipe"));
+                if (center) {
+                    var width = item.props.width || tools.gas_boiler.width || 40;
+                    var height = item.props.self_height || tools.gas_boiler.self_height || 60;
+                    var body = svgElement("rect", {x:center.x-width/2, y:center.y-height, width:width, height:height, rx:2, fill:"#fff", stroke:"#747b84", "stroke-width":1, "pointer-events":"all", class:"water-boiler-body", "data-water-boiler":id});
+                    if (item.IMAGE_PRS) item.IMAGE_PRS.node.style.visibility = "hidden";
+                    svgElement("rect", {x:center.x-width*.36,y:center.y-height*.88,width:width*.72,height:height*.5,fill:"#f3f4f5",stroke:"#747b84","stroke-width":.7,"pointer-events":"none"});
+                    svgElement("rect", {x:center.x-width*.25,y:center.y-height*.24,width:width*.5,height:height*.1,fill:"#e2e5e8",stroke:"#747b84","stroke-width":.7,"pointer-events":"none"});
+                    title(body, "Газовый котел — перетащите корпус");
+                    body.addEventListener("mousedown", function (event) {
+                        stop(event);
+                        if (event.button === 2) { asWater(function () { item.contextmenu(event); }); return; }
+                        if (event.button === 0 && tool === "none") drag = {fixture:item, base:center, start:eventPoint(event), moved:false};
+                        else if (event.button === 0 && tool === "eraser") { asWater(function () { item.delete(); }); refresh(); save(); }
+                    });
+                }
+            }
             fixtureTypes(item).forEach(function (type) {
                 var p = fixturePort(item, type); if (!p) return;
                 var port = { x: p.x, y: p.y, edge: p.edge, item: item, id: item.props.id, type: type };
@@ -239,8 +257,8 @@
                 title(circle, item.props.name === "gas_boiler" ? (type === "water_pipe" ? "Ввод холодной воды (ХВС)" : "Вывод горячей воды (ГВС)") : (tools[item.props.name].title + " — " + NAMES[type]));
                 circle.addEventListener("mousedown", function (e) { portDown(e, port); });
                 if (item.props.name === "gas_boiler") {
-                    var text = svgElement("text", { x: p.x, y: p.y + (type === "water_pipe" ? 13 : 23), "text-anchor": "middle", fill: COLORS[type], "font-size": 8, "pointer-events": "none" });
-                    text.textContent = type === "water_pipe" ? "↑ Ввод ХВС" : "↓ Вывод ГВС";
+                    var sign = type === "water_pipe" ? -1 : 1;
+                    svgElement("path", {d:"M"+p.x+" "+(p.y+7)+"v"+(sign*5)+"m-2 "+(-sign*2)+" 2 "+(sign*2)+" 2 "+(-sign*2), stroke:COLORS[type], "stroke-width":1.5, fill:"none", "pointer-events":"none", "data-water-port-direction":type});
                 }
             });
         });
@@ -309,7 +327,7 @@
         if (event.button !== 0) return;
         if (TYPES.indexOf(tool) !== -1) { connect(port); schedule(); }
         else if (tool === "eraser") { asWater(function () { port.item.delete(); }); refresh(); save(); }
-        else if (tool === "none") drag = { port: port, start: eventPoint(event), moved: false };
+        else if (tool === "none" && port.item.props.name !== "gas_boiler") drag = { port: port, start: eventPoint(event), moved: false };
     }
     function nodeDown(event, view) {
         stop(event);
@@ -412,6 +430,18 @@
             drag.moved = true;
             if (drag.view) moveNode(drag.view, p);
             else if (drag.nodes) drag.nodes.forEach(function (n) { moveNode(n.view, { x: n.x + p.x-drag.start.x, y: n.y + p.y-drag.start.y }); });
+            else if (drag.fixture) {
+                var item = drag.fixture, converted = fromScreen({x:drag.base.x+p.x-drag.start.x, y:drag.base.y+p.y-drag.start.y},drag.base.edge);
+                if (converted) {
+                    var oldFoot = onEdge(item.props.pc, converted.edge).foot, newFoot = onEdge(converted.point, converted.edge).foot;
+                    item.props.pc = {x:newFoot.x+item.props.pc.x-oldFoot.x,y:newFoot.y+item.props.pc.y-oldFoot.y};
+                    item.pc = item.props.pc; item.props.projection = newFoot;
+                    if (item.props.over_floor) item.props.over_floor.value = Math.max(0, converted.meta.height-(item.props.f0offset || 0));
+                    asWater(function () { item.draw(null, {force_draw:true}); values(trees()).forEach(function (tree) { if (tree.items[item.props.id]) tree.draw(); }); });
+                    refresh();
+                    measurements(converted.point, event, converted);
+                }
+            }
             else if (drag.port) {
                 var converted = fromScreen(p, drag.port.edge), item = drag.port.item;
                 if (converted) asWater(function () {
@@ -456,6 +486,7 @@
         }
         if (selector && window.project) selector.value = String(project.prs.mode || 1);
         if (!isWater) {
+            Object.keys(ITEMS).forEach(function (id) { var item = ITEMS[id]; if (item && item.props && item.props.name === "gas_boiler" && item.IMAGE_PRS) item.IMAGE_PRS.node.style.visibility = ""; });
             if (drawing) { drawing.remove(); drawing = null; }
             ["prs_sockets", "prs_items", "prs_shields", "prs_trees", "prs_trees_nodes", "prs_freelines", "prs_freelines_nodes"].forEach(function (name) { if (window.layers && layers[name]) layers[name].node.style.pointerEvents = ""; });
         }
