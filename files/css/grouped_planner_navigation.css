@@ -312,5 +312,29 @@
 .planner-search-guide.points-right:before { left: auto; right: -10px; border-right: 0; border-left: 10px solid #ed940e; }
 
 #planner_ui_tools_wrapper.planner-search-single-panel #planner_ui_tools { display: none; }
-#planner_ui_tools_wrapper.planner-search-single-panel .planner_ui_subtools.active { left: 0 !important; position: relative; }
+#planner_ui_tools_wrapper.planner-search-navigation {
+    width: 300px !important;
+    max-width: calc(100vw - 28px);
+    transition: none;
+}
+#planner_ui_tools_wrapper.planner-search-navigation #planner_ui_tools { width: 100%; }
+#planner_ui_tools_wrapper.planner-search-navigation .tools_item,
+#planner_ui_tools_wrapper.planner-search-navigation .tools_more_item {
+    min-width: 0;
+    white-space: normal;
+}
+#planner_ui_tools_wrapper.planner-search-single-panel .planner_ui_subtools.active {
+    left: 0 !important;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+#planner_ui_tools_wrapper.planner-search-single-panel .slimScrollDiv,
+#planner_ui_tools_wrapper.planner-search-single-panel .scroller { width: 100% !important; }
+#planner_ui_tools_wrapper.planner-search-single-panel .subtools_item {
+    min-width: 0;
+    white-space: normal;
+}
 .planner-search-back { display: block; width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid #dfe2e6; background: #fff; color: #626972; text-align: left; cursor: pointer; font: 12px/1.4 Arial, sans-serif; }

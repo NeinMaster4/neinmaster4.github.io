@@ -306,15 +306,40 @@
             });
         }
         var toolsWrapper = document.getElementById("planner_ui_tools_wrapper");
-        var closeSubtools = window.close_subtools_wrapper;
-        window.close_subtools_wrapper = function () {
-            toolsWrapper.classList.remove("planner-search-single-panel");
-            toolsWrapper.querySelectorAll(".planner-search-back").forEach(function (button) { button.remove(); });
-            var result = closeSubtools.apply(this, arguments);
-            toolsWrapper.style.width = document.getElementById("planner_ui_tools").offsetWidth + "px";
-            return result;
+        // Search uses the existing tools in one stable panel. Native hover and
+        // submenu handlers consult this controller instead of restoring a second rail.
+        var searchTools = window.plannerSearchTools = {
+            active: false,
+            open: function (panel) {
+                toolsWrapper.classList.add("planner-search-single-panel");
+                if (!panel.querySelector(".planner-search-back")) {
+                    var back = document.createElement("button");
+                    back.type = "button"; back.className = "planner-search-back";
+                    back.textContent = "← Все инструменты";
+                    back.addEventListener("click", function (event) {
+                        event.stopPropagation(); clearGuide(); close_subtools_wrapper();
+                    });
+                    panel.insertBefore(back, panel.firstChild);
+                }
+            },
+            close: function () {
+                toolsWrapper.classList.remove("planner-search-single-panel");
+                toolsWrapper.querySelectorAll(".planner-search-back").forEach(function (button) { button.remove(); });
+                // Otherwise entering the rail restores the previous submenu again.
+                set_last_active_subtool(false);
+                toolsWrapper.querySelectorAll(".tools_item.has_subtools.active").forEach(function (node) { node.classList.remove("active"); });
+            },
+            end: function () {
+                if (!this.active) return;
+                close_subtools_wrapper(); this.active = false;
+                toolsWrapper.classList.remove("planner-search-navigation");
+                toolsWrapper.style.width = "40px";
+                clearGuide();
+            }
         };
-        navigation.addEventListener("click", function (event) { if (event.target.closest(".groups_navi_item")) close_subtools_wrapper(); });
+        navigation.addEventListener("click", function (event) {
+            if (event.target.closest(".groups_navi_item")) searchTools.end();
+        }, true);
         function clearGuide() {
             if (guideTarget) guideTarget.classList.remove("planner-search-found");
             if (guide) guide.remove(); guide = guideTarget = null;
@@ -342,23 +367,13 @@
             if (typeof window.close_subtools_wrapper === "function") close_subtools_wrapper();
             // Use the same mode transition as a manual choice. Finding a tool does not activate construction.
             entry.mode.click();
+            searchTools.active = true;
+            toolsWrapper.classList.add("planner-search-navigation");
             var attempt = 0;
             function locate() {
                 if (version !== revealVersion) return;
-                if (!entry.panel) {
-                    var toolsPanel = document.getElementById("planner_ui_tools");
-                    if (toolsWrapper && toolsPanel) toolsWrapper.style.width = toolsPanel.offsetWidth + "px";
-                }
                 if (entry.panel && typeof window.open_subtools_wrapper === "function") {
                     open_subtools_wrapper(entry.panel.getAttribute("data-parent"));
-                    toolsWrapper.classList.add("planner-search-single-panel");
-                    if (!entry.panel.querySelector(".planner-search-back")) {
-                        var back = document.createElement("button"); back.type = "button"; back.className = "planner-search-back";
-                        back.textContent = "← Все инструменты";
-                        back.addEventListener("click", function (event) { event.stopPropagation(); clearGuide(); close_subtools_wrapper(); });
-                        entry.panel.insertBefore(back, entry.panel.firstChild);
-                    }
-                    toolsWrapper.style.width = entry.panel.offsetWidth + "px";
                     var group = entry.node.closest(".subtools_group"); if (group) group.classList.add("active");
                 }
                 if (entry.node === entry.mode) { pointTo(trigger, entry.name); return; }

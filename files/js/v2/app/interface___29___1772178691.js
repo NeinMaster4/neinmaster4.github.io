@@ -864,6 +864,9 @@ function open_subtools_wrapper(target) {
 			}
 		}
 	}
+	if (window.plannerSearchTools && plannerSearchTools.active) {
+		plannerSearchTools.open(wrapper[0]);
+	}
 	set_subtools_width();
 }
 
@@ -872,6 +875,7 @@ function set_last_active_subtool(value) {
 }
 
 function close_subtools_wrapper() {
+	if (window.plannerSearchTools && plannerSearchTools.active) plannerSearchTools.close();
 	$("#planner_ui_guide_scroll_menu").removeClass("active");
 	$("#planner_ui_tools_wrapper .planner_ui_subtools").removeClass("active");
 	if ($("#planner_ui_tools_wrapper").hasClass("adaptive") ) {
@@ -881,6 +885,7 @@ function close_subtools_wrapper() {
 }
 
 function set_subtools_width() {
+	if (window.plannerSearchTools && plannerSearchTools.active) return;
 	wrapper = $(".planner_ui_subtools.active");
 	if (!wrapper.length) return false;
 	var width = parseInt($("#planner_ui_tools").outerWidth());
@@ -2166,6 +2171,7 @@ $(function() {
 	var ui_hover_timeout = null;
 	$("#planner_ui_tools_wrapper").mouseenter(function(e) {
 		clearTimeout(ui_hover_timeout);
+		if (window.plannerSearchTools && plannerSearchTools.active) return;
 		var width = parseInt($("#planner_ui_tools").outerWidth());
 		$(this).css("width", width+"px");
 		$("#planner_ui_tools_wrapper .planner_ui_subtools").css("left", width+"px");
@@ -2179,6 +2185,7 @@ $(function() {
 		}
 	}).mouseleave(function(e) {
 		ui_hover_timeout = setTimeout(function() {
+			if (window.plannerSearchTools && plannerSearchTools.active) return;
 			$("#planner_ui_tools_wrapper").css("width", "40px");
 			$("#planner_ui_guide_scroll_menu").removeClass("active");
 			$("#planner_ui_tools_wrapper").removeClass("active");

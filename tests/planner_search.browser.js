@@ -37,6 +37,27 @@
         assert(document.getElementById('plannertool_window').closest('.planner_ui_subtools').classList.contains('active'),'Search opens the nested tool menu');
         assert(document.getElementById('plannertool_window').classList.contains('planner-search-found'),'Search points to the nested result');
         assert(getComputedStyle(document.getElementById('planner_ui_tools')).display==='none' && document.querySelectorAll('.planner_ui_subtools.active').length===1,'Nested search reveals only one tool panel');
+        const rail=document.getElementById('planner_ui_tools_wrapper');
+        const foundWindow=document.getElementById('plannertool_window');
+        function assertSinglePanel(message) {
+            const panel=document.querySelector('.planner_ui_subtools.active');
+            const bounds=rail.getBoundingClientRect(), target=panel.getBoundingClientRect();
+            assert(getComputedStyle(document.getElementById('planner_ui_tools')).display==='none' && document.querySelectorAll('.planner_ui_subtools.active').length===1 && target.left>=bounds.left && target.right<=bounds.right+1 && target.width>=280,message);
+        }
+        $(rail).trigger('mouseleave');
+        for(let i=0;i<7;i++) await tick();
+        $(rail).trigger('mouseenter');
+        assertSinglePanel('Leaving and re-entering a search panel keeps one full-width menu');
+        foundWindow.click();await tick();
+        $(rail).trigger('mouseleave');
+        for(let i=0;i<7;i++) await tick();
+        $(rail).trigger('mouseenter');
+        assert(!document.querySelector('.planner_ui_subtools.active'),'Selecting a found tool does not resurrect its submenu on hover');
+        document.querySelector('#planner_ui_tools .tools_item[data-target="group14"]').click();await tick();
+        assertSinglePanel('Opening another group after search replaces the root rail');
+        document.querySelector('.planner-search-back').click();await tick();
+        $(rail).trigger('mouseenter');
+        assert(!document.querySelector('.planner_ui_subtools.active') && getComputedStyle(document.getElementById('planner_ui_tools')).display!=='none','Back restores only the root menu and clears submenu memory');
         search('Газовый котел');assert(results.children.length===1,'Duplicate boiler catalog entries produce one search result');
         field.value='';field.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.planner-nav-trigger').click();
         search('абракадабра12345');assert(!results.children.length && document.querySelector('.planner-search-status').textContent==='Ничего не найдено','Unknown queries show an empty result state');
@@ -46,6 +67,9 @@
         assert(!document.querySelector('.planner_ui_subtools.active'),'A new search result closes the previous nested menu');
         await tick();await tick();
         assert(Math.abs(document.getElementById('planner_ui_tools_wrapper').clientWidth-document.getElementById('planner_ui_tools').offsetWidth)<3,'Closing search submenus also restores the toolbar width');
+        document.querySelector('.groups_navi_item[data-plan="init"]').click();await tick();
+        $(rail).trigger('mouseenter');
+        assert(!rail.classList.contains('planner-search-navigation') && !document.querySelector('.planner_ui_subtools.active'),'Manual mode changes exit search navigation without restoring an old submenu');
         output.textContent=resultsLog.join('\n')+'\nALL PASSED';output.className='pass';
     } catch(error) { output.textContent=resultsLog.join('\n')+'\nFAIL '+error.stack;output.className='fail'; }
 }());
